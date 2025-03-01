@@ -12,6 +12,7 @@ internal interface ICardRepository
     Task AddAuthorizationLogAsync(AuthorizationLogEntity authLog, CancellationToken cancellationToken);
     Task AddTransactionAsync(TransactionEntity transaction, CancellationToken cancellationToken);
     Task<PaymentFeeEntity?> GetLatestPaymentFeeAsync(CancellationToken cancellationToken);
+    Task AddUpdateLogAsync(CardUpdateLogEntity updateLog, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
 
@@ -54,6 +55,12 @@ internal class CardRepository(RapidPayDbContext dbContext) : ICardRepository
         return dbContext.PaymentFees
             .OrderByDescending(f => f.UpdatedAt)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public Task AddUpdateLogAsync(CardUpdateLogEntity updateLog, CancellationToken cancellationToken)
+    {
+        dbContext.CardUpdateLogs.Add(updateLog);
+        return Task.CompletedTask;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

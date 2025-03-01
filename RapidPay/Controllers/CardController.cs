@@ -4,6 +4,7 @@ using RapidPay.Application.Features.CardManagement.AuthorizeCard;
 using RapidPay.Application.Features.CardManagement.CreateCard;
 using RapidPay.Application.Features.CardManagement.GetCardBalance;
 using RapidPay.Application.Features.CardManagement.PayWithCard;
+using RapidPay.Application.Features.CardManagement.UpdateCardDetails;
 
 namespace RapidPayApi.Controllers;
 
@@ -48,6 +49,14 @@ public class CardController : ControllerBase
     {
         var query = new GetCardBalanceQuery(cardId);
         var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+
+    // PUT: api/Card/update
+    [HttpPut("update")]
+    public async Task<IActionResult> Update([FromBody] UpdateCardDetailsCommand command)
+    {
+        var result = await _mediator.Send(command);
         return Ok(result);
     }
 }

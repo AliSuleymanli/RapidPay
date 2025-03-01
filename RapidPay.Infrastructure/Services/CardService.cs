@@ -3,6 +3,7 @@ using RapidPay.Application.Features.CardManagement.AuthorizeCard;
 using RapidPay.Application.Features.CardManagement.CreateCard;
 using RapidPay.Application.Features.CardManagement.GetCardBalance;
 using RapidPay.Application.Features.CardManagement.PayWithCard;
+using RapidPay.Application.Features.CardManagement.UpdateCardDetails;
 using RapidPay.Infrastructure.Data.Entities;
 using RapidPay.Infrastructure.Repositories;
 
@@ -126,5 +127,53 @@ internal class CardService(ICardRepository cardRepository) : ICardService
         decimal availableBalance = card.Balance + (card.CreditLimit ?? 0);
 
         return new CardBalanceDto(card.Id, card.Balance, card.CreditLimit, availableBalance);
+    }
+
+    public async Task<CardDto> UpdateCardDetailsAsync(UpdateCardDetailsCommand command, CancellationToken cancellationToken)
+    {
+        // Retrieve the card.
+        var card = await cardRepository.GetByIdAsync(command.CardId, cancellationToken);
+        if (card == null)
+        {
+            throw new Exception("Card not found.");
+        }
+
+        // Keep a record of changes.
+        var changes = new List<string>();
+
+        if (command.NewBalance.HasValue && command.NewBalance.Value != card.Balance)
+        {
+            changes.Add($"Balance: {card.Balance} -> {command.NewBalance.Value}");
+            card.Balance = command.NewBalance.Value;
+        }
+
+        if (command.NewCreditLimit.HasValue && command.NewCreditLimit.Value != card.CreditLimit)
+        {
+            changes.Add($"CreditLimit: {card.CreditLimit} -> {command.NewCreditLimit.Value}");
+            card.CreditLimit = command.NewCreditLimit.Value;
+        }
+
+        if (!string.IsNullOrEmpty(command.NewStatus) && command.NewStatus != card.Status)
+        {
+            changes.Add($"Status: {card.Status} -> {command.NewStatus}");
+            card.Status = command.NewStatus;
+        }
+
+        // Create an update log if there are changes.
+        if (changes.Count > 0)
+        {
+            var updateLog = new CardUpdateLogEntity
+            {
+                CardId = card.Id,
+                UpdatedAt = DateTime.UtcNow,
+                Changes = string.Join("; ", changes)
+            };
+
+            await cardRepository.AddUpdateLogAsync(updateLog, cancellationToken);
+        }
+
+        await cardRepository.SaveChangesAsync(cancellationToken);
+
+        return new CardDto(card.Id, card.CardNumber, card.Balance, card.CreditLimit, card.Status);
     }
 }
