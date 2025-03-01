@@ -10,12 +10,10 @@ internal class CardService(RapidPayDbContext dbContext, ICardRepository cardRepo
 {
     public async Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken)
     {
-        // Generate a 15-digit card number.
         var random = new Random();
         var cardNumber = string.Concat(Enumerable.Range(0, 15)
                                 .Select(_ => random.Next(0, 10).ToString()));
 
-        // Create a new card entity.
         var cardEntity = new CardEntity
         {
             CardNumber = cardNumber,
