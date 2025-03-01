@@ -10,6 +10,8 @@ internal interface ICardRepository
     Task<CardEntity?> GetByIdAsync(Guid cardId, CancellationToken cancellationToken);
     Task<bool> HasRecentAuthorizationAsync(Guid cardId, TimeSpan window, CancellationToken cancellationToken);
     Task AddAuthorizationLogAsync(AuthorizationLogEntity authLog, CancellationToken cancellationToken);
+    Task AddTransactionAsync(TransactionEntity transaction, CancellationToken cancellationToken);
+    Task<PaymentFeeEntity?> GetLatestPaymentFeeAsync(CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
 
@@ -41,9 +43,21 @@ internal class CardRepository(RapidPayDbContext dbContext) : ICardRepository
         return Task.CompletedTask;
     }
 
+    public Task AddTransactionAsync(TransactionEntity transaction, CancellationToken cancellationToken)
+    {
+        dbContext.Transactions.Add(transaction);
+        return Task.CompletedTask;
+    }
+
+    public Task<PaymentFeeEntity?> GetLatestPaymentFeeAsync(CancellationToken cancellationToken)
+    {
+        return dbContext.PaymentFees
+            .OrderByDescending(f => f.UpdatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return dbContext.SaveChangesAsync(cancellationToken);
     }
 }
-

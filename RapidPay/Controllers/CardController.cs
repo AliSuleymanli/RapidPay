@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using RapidPay.Application.Features.CardManagement.AuthorizeCard;
 using RapidPay.Application.Features.CardManagement.CreateCard;
+using RapidPay.Application.Features.CardManagement.GetCardBalance;
+using RapidPay.Application.Features.CardManagement.PayWithCard;
 
 namespace RapidPayApi.Controllers;
 
@@ -29,6 +31,23 @@ public class CardController : ControllerBase
     public async Task<IActionResult> Authorize([FromBody] AuthorizeCardCommand command)
     {
         var result = await _mediator.Send(command);
+        return Ok(result);
+    }
+
+    // POST: api/Card/pay
+    [HttpPost("pay")]
+    public async Task<IActionResult> Pay([FromBody] PayWithCardCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(result);
+    }
+
+    // GET: api/Card/{cardId}/balance
+    [HttpGet("{cardId}/balance")]
+    public async Task<IActionResult> GetBalance(Guid cardId)
+    {
+        var query = new GetCardBalanceQuery(cardId);
+        var result = await _mediator.Send(query);
         return Ok(result);
     }
 }
