@@ -18,6 +18,5 @@ public class RapidPayDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        // Fluent API configurations can be added here if needed.
     }
 }

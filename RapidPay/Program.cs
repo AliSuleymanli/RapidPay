@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using RapidPay.Infrastructure.Data;
+using RapidPay.Application;
+using RapidPay.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,9 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddDbContext<RapidPayDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("RapidPayConnection"))
-);
+builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddApplicationServices();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
