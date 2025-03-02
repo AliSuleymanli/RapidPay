@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RapidPay.Application.Features.CardManagement.AuthorizeCard;
 using RapidPay.Application.Features.CardManagement.CreateCard;
@@ -9,6 +10,7 @@ using RapidPay.Application.Features.CardManagement.UpdateCardDetails;
 namespace RapidPayApi.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class CardController : ControllerBase
 {

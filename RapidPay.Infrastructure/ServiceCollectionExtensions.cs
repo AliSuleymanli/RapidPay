@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RapidPay.Application.Features.Auth;
 using RapidPay.Application.Features.CardManagement;
 using RapidPay.Infrastructure.Data;
 using RapidPay.Infrastructure.Repositories;
@@ -19,6 +20,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ICardRepository, CardRepository>();
         services.AddScoped<ICardService, CardService>();
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

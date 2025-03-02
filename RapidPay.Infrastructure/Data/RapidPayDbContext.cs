@@ -15,6 +15,7 @@ public class RapidPayDbContext : DbContext
     public DbSet<AuthorizationLogEntity> AuthorizationLogs { get; set; }
     public DbSet<PaymentFeeEntity> PaymentFees { get; set; }
     public DbSet<CardUpdateLogEntity> CardUpdateLogs { get; set; }
+    public DbSet<UserEntity> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
