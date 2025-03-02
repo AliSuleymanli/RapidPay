@@ -12,6 +12,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHostedService<UfeFeeUpdaterService>();
+
         services.AddDbContext<RapidPayDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("RapidPayConnection")));
 
