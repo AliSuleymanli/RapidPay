@@ -6,19 +6,30 @@ using RapidPay.Application.Features.CardManagement.PayWithCard;
 using RapidPay.Application.Features.CardManagement.UpdateCardDetails;
 using RapidPay.Infrastructure.Data.Entities;
 using RapidPay.Infrastructure.Repositories;
+using System.Text.Json;
 
 namespace RapidPay.Infrastructure.Services;
 
-internal class CardService(ICardRepository cardRepository) : ICardService
+internal class CardService(ICardRepository cardRepository, IIdempotencyRepository idempotencyRepository) : ICardService
 {
-    public async Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken)
+    public async Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken, string? idempotencyKey = null)
     {
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            var existingRecord = await idempotencyRepository.GetRecordAsync(idempotencyKey, cancellationToken);
+            if (existingRecord != null)
+            {
+                return JsonSerializer.Deserialize<CardDto>(existingRecord.ResponseJson)!;
+            }
+        }
+
         var random = new Random();
         var cardNumber = string.Concat(Enumerable.Range(0, 15)
                                 .Select(_ => random.Next(0, 10).ToString()));
 
         var cardEntity = new CardEntity
         {
+            Id = Guid.NewGuid(),
             CardNumber = cardNumber,
             Balance = (decimal)(random.NextDouble() * 1000),
             CreditLimit = creditLimit,
@@ -26,10 +37,24 @@ internal class CardService(ICardRepository cardRepository) : ICardService
             CreatedAt = DateTime.UtcNow
         };
 
+        var resultDto = new CardDto(cardEntity.Id, cardEntity.CardNumber, cardEntity.Balance, cardEntity.CreditLimit, cardEntity.Status);
+
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            var record = new IdempotencyRecordEntity
+            {
+                IdempotencyKey = idempotencyKey,
+                ResponseJson = JsonSerializer.Serialize(resultDto),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await idempotencyRepository.AddRecordAsync(record, cancellationToken);
+        }
+
         await cardRepository.AddAsync(cardEntity, cancellationToken);
         await cardRepository.SaveChangesAsync(cancellationToken);
 
-        return new CardDto(cardEntity.Id, cardEntity.CardNumber, cardEntity.Balance, cardEntity.CreditLimit, cardEntity.Status);
+        return resultDto;
     }
 
     public async Task<AuthorizationResultDto> AuthorizeCardAsync(Guid cardId, CancellationToken cancellationToken)

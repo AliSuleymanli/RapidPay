@@ -6,6 +6,6 @@ public class CreateCardCommandHandler(ICardService cardService) : IRequestHandle
 {
     public async Task<CardDto> Handle(CreateCardCommand request, CancellationToken cancellationToken)
     {
-        return await cardService.CreateCardAsync(request.CreditLimit, cancellationToken);
+        return await cardService.CreateCardAsync(request.CreditLimit, cancellationToken, request.IdempotencyKey);
     }
 }

@@ -24,6 +24,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
 
+        services.AddScoped<IIdempotencyRepository, IdempotencyRepository>();
+
         return services;
     }
 }

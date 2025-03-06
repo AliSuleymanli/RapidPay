@@ -25,6 +25,11 @@ public class CardController : ControllerBase
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateCardCommand command)
     {
+        if (Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey))
+        {
+            command = new CreateCardCommand(command.CreditLimit, idempotencyKey);
+        }
+
         var result = await _mediator.Send(command);
         return Ok(result);
     }

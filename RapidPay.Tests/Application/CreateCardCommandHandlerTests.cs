@@ -12,8 +12,12 @@ public class CreateCardCommandHandlerTests
         // Arrange
         var expectedDto = new CardDto(Guid.NewGuid(), "123456789012345", 500m, 100m, "Active");
         var cardServiceMock = new Mock<ICardService>();
+        var idempotencyKey = Guid.NewGuid().ToString();
         cardServiceMock
-            .Setup(s => s.CreateCardAsync(It.IsAny<decimal?>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateCardAsync(
+                It.IsAny<decimal?>(),
+                It.IsAny<CancellationToken>(),
+                idempotencyKey))
             .ReturnsAsync(expectedDto);
 
         var handler = new CreateCardCommandHandler(cardServiceMock.Object);
@@ -25,6 +29,6 @@ public class CreateCardCommandHandlerTests
 
         // Assert
         Assert.Equal(expectedDto, result);
-        cardServiceMock.Verify(s => s.CreateCardAsync(100m, cancellationToken), Times.Once);
+        cardServiceMock.Verify(s => s.CreateCardAsync(100m, cancellationToken, idempotencyKey), Times.Once);
     }
 }
