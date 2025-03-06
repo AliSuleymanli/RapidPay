@@ -22,8 +22,9 @@ public class PayWithCardCommandHandlerTests
         );
 
         var cardServiceMock = new Mock<ICardService>();
+        var idempotencyKey = Guid.NewGuid().ToString();
         cardServiceMock
-            .Setup(s => s.PayWithCardAsync(cardId, paymentAmount, It.IsAny<CancellationToken>()))
+            .Setup(s => s.PayWithCardAsync(cardId, paymentAmount, It.IsAny<CancellationToken>(), idempotencyKey))
             .ReturnsAsync(expectedDto);
 
         var handler = new PayWithCardCommandHandler(cardServiceMock.Object);
@@ -35,6 +36,6 @@ public class PayWithCardCommandHandlerTests
 
         // Assert
         Assert.Equal(expectedDto, result);
-        cardServiceMock.Verify(s => s.PayWithCardAsync(cardId, paymentAmount, cancellationToken), Times.Once);
+        cardServiceMock.Verify(s => s.PayWithCardAsync(cardId, paymentAmount, cancellationToken, idempotencyKey), Times.Once);
     }
 }

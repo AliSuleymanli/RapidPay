@@ -90,8 +90,17 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
         return new AuthorizationResultDto(cardId, true, "Authorization successful.");
     }
 
-    public async Task<PaymentTransactionDto> PayWithCardAsync(Guid cardId, decimal paymentAmount, CancellationToken cancellationToken)
+    public async Task<PaymentTransactionDto> PayWithCardAsync(Guid cardId, decimal paymentAmount, CancellationToken cancellationToken, string? idempotencyKey = null)
     {
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            var existingRecord = await idempotencyRepository.GetRecordAsync(idempotencyKey, cancellationToken);
+            if (existingRecord != null)
+            {
+                return JsonSerializer.Deserialize<PaymentTransactionDto>(existingRecord.ResponseJson)!;
+            }
+        }
+
         // Retrieve the card.
         var card = await cardRepository.GetByIdAsync(cardId, cancellationToken);
         if (card == null)
@@ -120,24 +129,38 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
         // Create a transaction record and add it via the repository.
         var transaction = new TransactionEntity
         {
+            Id = Guid.NewGuid(),
             CardId = card.Id,
             Amount = paymentAmount,
             Fee = fee,
             Timestamp = DateTime.UtcNow
         };
 
-        await cardRepository.AddTransactionAsync(transaction, cancellationToken);
-
-        // Persist all changes.
-        await cardRepository.SaveChangesAsync(cancellationToken);
-
-        return new PaymentTransactionDto(
+        var resultDto = new PaymentTransactionDto(
             transaction.Id,
             card.Id,
             paymentAmount,
             fee,
             card.Balance,
             transaction.Timestamp);
+
+        await cardRepository.AddTransactionAsync(transaction, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            var record = new IdempotencyRecordEntity
+            {
+                IdempotencyKey = idempotencyKey,
+                ResponseJson = JsonSerializer.Serialize(resultDto),
+                CreatedAt = DateTime.UtcNow
+            };
+            await idempotencyRepository.AddRecordAsync(record, cancellationToken);
+        }
+
+        // Persist all changes.
+        await cardRepository.SaveChangesAsync(cancellationToken);
+
+        return resultDto;
     }
 
     public async Task<CardBalanceDto> GetCardBalanceAsync(Guid cardId, CancellationToken cancellationToken)

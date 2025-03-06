@@ -6,6 +6,6 @@ public class PayWithCardCommandHandler(ICardService cardService) : IRequestHandl
 {
     public async Task<PaymentTransactionDto> Handle(PayWithCardCommand request, CancellationToken cancellationToken)
     {
-        return await cardService.PayWithCardAsync(request.CardId, request.PaymentAmount, cancellationToken);
+        return await cardService.PayWithCardAsync(request.CardId, request.PaymentAmount, cancellationToken, request.IdempotencyKey);
     }
 }

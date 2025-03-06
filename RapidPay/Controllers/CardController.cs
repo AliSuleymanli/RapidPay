@@ -46,6 +46,11 @@ public class CardController : ControllerBase
     [HttpPost("pay")]
     public async Task<IActionResult> Pay([FromBody] PayWithCardCommand command)
     {
+        if (Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey))
+        {
+            command = new PayWithCardCommand(command.CardId, command.PaymentAmount, idempotencyKey);
+        }
+
         var result = await _mediator.Send(command);
         return Ok(result);
     }
