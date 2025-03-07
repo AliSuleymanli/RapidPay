@@ -1,4 +1,5 @@
-﻿using RapidPay.Application.Features.CardManagement;
+﻿using RapidPay.Application.Exceptions;
+using RapidPay.Application.Features.CardManagement;
 using RapidPay.Application.Features.CardManagement.AuthorizeCard;
 using RapidPay.Application.Features.CardManagement.CreateCard;
 using RapidPay.Application.Features.CardManagement.GetCardBalance;
@@ -12,15 +13,12 @@ namespace RapidPay.Infrastructure.Services;
 
 internal class CardService(ICardRepository cardRepository, IIdempotencyRepository idempotencyRepository) : ICardService
 {
-    public async Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken, string? idempotencyKey = null)
+    public async Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken, string idempotencyKey)
     {
-        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        var existingRecord = await idempotencyRepository.GetRecordAsync(idempotencyKey, cancellationToken);
+        if (existingRecord != null)
         {
-            var existingRecord = await idempotencyRepository.GetRecordAsync(idempotencyKey, cancellationToken);
-            if (existingRecord != null)
-            {
-                return JsonSerializer.Deserialize<CardDto>(existingRecord.ResponseJson)!;
-            }
+            return JsonSerializer.Deserialize<CardDto>(existingRecord.ResponseJson)!;
         }
 
         var random = new Random();
@@ -39,19 +37,16 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
 
         var resultDto = new CardDto(cardEntity.Id, cardEntity.CardNumber, cardEntity.Balance, cardEntity.CreditLimit, cardEntity.Status);
 
-        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        var record = new IdempotencyRecordEntity
         {
-            var record = new IdempotencyRecordEntity
-            {
-                IdempotencyKey = idempotencyKey,
-                ResponseJson = JsonSerializer.Serialize(resultDto),
-                CreatedAt = DateTime.UtcNow
-            };
+            IdempotencyKey = idempotencyKey,
+            ResponseJson = JsonSerializer.Serialize(resultDto),
+            CreatedAt = DateTime.UtcNow
+        };
 
-            await idempotencyRepository.AddRecordAsync(record, cancellationToken);
-        }
-
+        await idempotencyRepository.AddRecordAsync(record, cancellationToken);
         await cardRepository.AddAsync(cardEntity, cancellationToken);
+
         await cardRepository.SaveChangesAsync(cancellationToken);
 
         return resultDto;
@@ -90,27 +85,24 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
         return new AuthorizationResultDto(cardId, true, "Authorization successful.");
     }
 
-    public async Task<PaymentTransactionDto> PayWithCardAsync(Guid cardId, decimal paymentAmount, CancellationToken cancellationToken, string? idempotencyKey = null)
+    public async Task<PaymentTransactionDto> PayWithCardAsync(Guid cardId, decimal paymentAmount, CancellationToken cancellationToken, string idempotencyKey)
     {
-        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        var existingRecord = await idempotencyRepository.GetRecordAsync(idempotencyKey, cancellationToken);
+        if (existingRecord != null)
         {
-            var existingRecord = await idempotencyRepository.GetRecordAsync(idempotencyKey, cancellationToken);
-            if (existingRecord != null)
-            {
-                return JsonSerializer.Deserialize<PaymentTransactionDto>(existingRecord.ResponseJson)!;
-            }
+            return JsonSerializer.Deserialize<PaymentTransactionDto>(existingRecord.ResponseJson)!;
         }
 
         // Retrieve the card.
         var card = await cardRepository.GetByIdAsync(cardId, cancellationToken);
         if (card == null)
         {
-            throw new Exception("Card not found.");
+            throw new CardNotFoundException(cardId);
         }
 
         if (card.Status != "Active")
         {
-            throw new Exception("Card is not active.");
+            throw new CardNotActiveException(card.Id);
         }
 
         // Retrieve the current fee via the repository.
@@ -121,7 +113,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
 
         if (card.Balance + (card.CreditLimit ?? 0) < totalDeduction)
         {
-            throw new Exception("Insufficient funds.");
+            throw new InsufficientFundsException(card.Id, card.Balance + (card.CreditLimit ?? 0), totalDeduction);
         }
 
         card.Balance -= totalDeduction;
@@ -146,16 +138,13 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
 
         await cardRepository.AddTransactionAsync(transaction, cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        var record = new IdempotencyRecordEntity
         {
-            var record = new IdempotencyRecordEntity
-            {
-                IdempotencyKey = idempotencyKey,
-                ResponseJson = JsonSerializer.Serialize(resultDto),
-                CreatedAt = DateTime.UtcNow
-            };
-            await idempotencyRepository.AddRecordAsync(record, cancellationToken);
-        }
+            IdempotencyKey = idempotencyKey,
+            ResponseJson = JsonSerializer.Serialize(resultDto),
+            CreatedAt = DateTime.UtcNow
+        };
+        await idempotencyRepository.AddRecordAsync(record, cancellationToken);
 
         // Persist all changes.
         await cardRepository.SaveChangesAsync(cancellationToken);
@@ -169,7 +158,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
         var card = await cardRepository.GetByIdAsync(cardId, cancellationToken);
         if (card == null)
         {
-            throw new Exception("Card not found.");
+            throw new CardNotFoundException(cardId);
         }
 
         decimal availableBalance = card.Balance + (card.CreditLimit ?? 0);
@@ -183,7 +172,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
         var card = await cardRepository.GetByIdAsync(command.CardId, cancellationToken);
         if (card == null)
         {
-            throw new Exception("Card not found.");
+            throw new CardNotFoundException(command.CardId);
         }
 
         // Keep a record of changes.

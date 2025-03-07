@@ -9,8 +9,8 @@ namespace RapidPay.Application.Features.CardManagement;
 public interface ICardService
 {
     Task<AuthorizationResultDto> AuthorizeCardAsync(Guid cardId, CancellationToken cancellationToken);
-    Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken, string? idempotencyKey = null);
-    Task<PaymentTransactionDto> PayWithCardAsync(Guid cardId, decimal paymentAmount, CancellationToken cancellationToken, string? idempotencyKey = null);
+    Task<CardDto> CreateCardAsync(decimal? creditLimit, CancellationToken cancellationToken, string idempotencyKey);
+    Task<PaymentTransactionDto> PayWithCardAsync(Guid cardId, decimal paymentAmount, CancellationToken cancellationToken, string idempotencyKey);
     Task<CardBalanceDto> GetCardBalanceAsync(Guid cardId, CancellationToken cancellationToken);
     Task<CardDto> UpdateCardDetailsAsync(UpdateCardDetailsCommand command, CancellationToken cancellationToken);
 }

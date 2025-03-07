@@ -6,6 +6,7 @@ using RapidPay.Application.Features.CardManagement.CreateCard;
 using RapidPay.Application.Features.CardManagement.GetCardBalance;
 using RapidPay.Application.Features.CardManagement.PayWithCard;
 using RapidPay.Application.Features.CardManagement.UpdateCardDetails;
+using RapidPayApi.RequestDtos;
 
 namespace RapidPayApi.Controllers;
 
@@ -23,13 +24,14 @@ public class CardController : ControllerBase
 
     // POST: api/Card/create
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateCardCommand command)
+    public async Task<IActionResult> Create([FromBody] CreateCardRequest request)
     {
-        if (Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey))
+        if (!Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey) || string.IsNullOrWhiteSpace(idempotencyKey))
         {
-            command = new CreateCardCommand(command.CreditLimit, idempotencyKey);
+            return BadRequest("An idempotency key is required in the X-Idempotency-Key header.");
         }
 
+        var command = new CreateCardCommand(request.CreditLimit, idempotencyKey!);
         var result = await _mediator.Send(command);
         return Ok(result);
     }
@@ -44,13 +46,14 @@ public class CardController : ControllerBase
 
     // POST: api/Card/pay
     [HttpPost("pay")]
-    public async Task<IActionResult> Pay([FromBody] PayWithCardCommand command)
+    public async Task<IActionResult> Pay([FromBody] PayWithCardRequest request)
     {
-        if (Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey))
+        if (!Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey) || string.IsNullOrWhiteSpace(idempotencyKey))
         {
-            command = new PayWithCardCommand(command.CardId, command.PaymentAmount, idempotencyKey);
+            return BadRequest("An idempotency key is required in the X-Idempotency-Key header.");
         }
 
+        var command = new PayWithCardCommand(request.CardId, request.PaymentAmount, idempotencyKey!);
         var result = await _mediator.Send(command);
         return Ok(result);
     }
