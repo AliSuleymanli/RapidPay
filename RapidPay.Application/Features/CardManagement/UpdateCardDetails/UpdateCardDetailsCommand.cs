@@ -7,4 +7,4 @@ public record UpdateCardDetailsCommand(
         Guid CardId,
         decimal? NewBalance,
         decimal? NewCreditLimit,
-        string? NewStatus) : IRequest<CardDto>;
+        CardStatus NewStatus) : IRequest<CardDto>;

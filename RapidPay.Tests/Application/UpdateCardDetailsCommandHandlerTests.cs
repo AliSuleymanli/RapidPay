@@ -17,7 +17,7 @@ public class UpdateCardDetailsCommandHandlerTests
             "123456789012345",
             800m,
             1000m,
-            "Active"
+            CardStatus.Active
         );
 
         var cardServiceMock = new Mock<ICardService>();
@@ -26,7 +26,7 @@ public class UpdateCardDetailsCommandHandlerTests
             .ReturnsAsync(expectedDto);
 
         var handler = new UpdateCardDetailsCommandHandler(cardServiceMock.Object);
-        var command = new UpdateCardDetailsCommand(cardId, 800m, 1000m, "Active");
+        var command = new UpdateCardDetailsCommand(cardId, 800m, 1000m, CardStatus.Active);
         var cancellationToken = CancellationToken.None;
 
         // Act

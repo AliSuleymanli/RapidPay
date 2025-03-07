@@ -31,7 +31,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
             CardNumber = cardNumber,
             Balance = (decimal)(random.NextDouble() * 1000),
             CreditLimit = creditLimit,
-            Status = "Active",
+            Status = CardStatus.Active,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -60,7 +60,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
             return new AuthorizationResultDto(cardId, false, "Card not found.");
         }
 
-        if (card.Status != "Active")
+        if (card.Status != CardStatus.Active)
         {
             return new AuthorizationResultDto(cardId, false, "Card is not active.");
         }
@@ -100,7 +100,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
             throw new CardNotFoundException(cardId);
         }
 
-        if (card.Status != "Active")
+        if (card.Status != CardStatus.Active)
         {
             throw new CardNotActiveException(card.Id);
         }
@@ -190,7 +190,7 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
             card.CreditLimit = command.NewCreditLimit.Value;
         }
 
-        if (!string.IsNullOrEmpty(command.NewStatus) && command.NewStatus != card.Status)
+        if (command.NewStatus != card.Status)
         {
             changes.Add($"Status: {card.Status} -> {command.NewStatus}");
             card.Status = command.NewStatus;
