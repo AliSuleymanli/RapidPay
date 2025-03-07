@@ -28,7 +28,7 @@ public class PayWithCardCommandHandlerTests
             .ReturnsAsync(expectedDto);
 
         var handler = new PayWithCardCommandHandler(cardServiceMock.Object);
-        var command = new PayWithCardCommand(cardId, paymentAmount);
+        var command = new PayWithCardCommand(cardId, paymentAmount, idempotencyKey);
         var cancellationToken = CancellationToken.None;
 
         // Act

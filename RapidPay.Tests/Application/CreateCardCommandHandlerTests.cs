@@ -21,7 +21,7 @@ public class CreateCardCommandHandlerTests
             .ReturnsAsync(expectedDto);
 
         var handler = new CreateCardCommandHandler(cardServiceMock.Object);
-        var command = new CreateCardCommand(100m);
+        var command = new CreateCardCommand(100m, idempotencyKey);
         var cancellationToken = CancellationToken.None;
 
         // Act
