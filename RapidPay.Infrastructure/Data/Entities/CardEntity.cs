@@ -1,4 +1,5 @@
 ﻿using RapidPay.Application.Features.CardManagement;
+using System.ComponentModel.DataAnnotations;
 
 namespace RapidPay.Infrastructure.Data.Entities;
 
@@ -11,6 +12,9 @@ public class CardEntity
     public CardStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; }
 
     public ICollection<TransactionEntity> Transactions { get; set; }
 }

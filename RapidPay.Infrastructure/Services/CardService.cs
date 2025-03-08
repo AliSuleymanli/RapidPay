@@ -1,4 +1,5 @@
-﻿using RapidPay.Application.Exceptions;
+﻿using Microsoft.EntityFrameworkCore;
+using RapidPay.Application.Exceptions;
 using RapidPay.Application.Features.CardManagement;
 using RapidPay.Application.Features.CardManagement.AuthorizeCard;
 using RapidPay.Application.Features.CardManagement.CreateCard;
@@ -146,8 +147,15 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
         };
         await idempotencyRepository.AddRecordAsync(record, cancellationToken);
 
-        // Persist all changes.
-        await cardRepository.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await cardRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another request updated this card's rowversion.
+            throw new CardConcurrencyException(card.Id);
+        }
 
         return resultDto;
     }
@@ -209,7 +217,15 @@ internal class CardService(ICardRepository cardRepository, IIdempotencyRepositor
             await cardRepository.AddUpdateLogAsync(updateLog, cancellationToken);
         }
 
-        await cardRepository.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await cardRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another request updated the card since we retrieved it.
+            throw new CardConcurrencyException(command.CardId);
+        }
 
         return new CardDto(card.Id, card.CardNumber, card.Balance, card.CreditLimit, card.Status);
     }
