@@ -10,7 +10,7 @@ public class CreateCardCommandHandlerTests
     public async Task Handle_ValidCommand_ReturnsExpectedCardDto()
     {
         // Arrange
-        var expectedDto = new CardDto(Guid.NewGuid(), "123456789012345", 500m, 100m, "Active");
+        var expectedDto = new CardDto(Guid.NewGuid(), "123456789012345", 500m, 100m, CardStatus.Active);
         var cardServiceMock = new Mock<ICardService>();
         var idempotencyKey = Guid.NewGuid().ToString();
         cardServiceMock
